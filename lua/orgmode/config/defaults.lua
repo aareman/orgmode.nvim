@@ -96,6 +96,7 @@ local DefaultConfig = {
   },
   org_icalendar_file = nil,
   org_icalendar_days = 60,
+  org_highlight_diary_sexp = true,
   hyperlinks = {
     sources = {},
   },

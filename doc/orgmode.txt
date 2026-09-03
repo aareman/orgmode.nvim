@@ -2510,6 +2510,10 @@ Supported operators:
 In text, `%d` interpolates the number of years since the anniversary year and
 `%s` its ordinal suffix (`st`, `nd`, `rd`, `th`); `%%` escapes a literal `%`.
 
+**Highlighting:** diary sexp expressions are highlighted in org buffers (purple
+italic for the expression, bold for the time). This is controlled by
+`org_highlight_diary_sexp` (default: `t`).
+
 Headline entries may carry a time of day (`HH:MM`) inside the timestamp, which
 is shown in the agenda and included in the time grid:
 

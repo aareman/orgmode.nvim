@@ -201,6 +201,7 @@
 ---@field org_default_notes_file? string Path to default file for captures. Default: ''
 ---@field org_icalendar_file? string Path to write an iCalendar export of the agenda to (cron only unless called manually). Default: nil (disabled)
 ---@field org_icalendar_days? number How many days ahead to expand agenda entries and diary sexps in the iCalendar export. Default: 60
+---@field org_highlight_diary_sexp? boolean Highlight diary sexp expressions (%%(...) and <%%(... HH:MM)>) in org buffers. Default: true
 ---@field org_todo_keywords? string[] List of todo/done states, separated by `|`. Default: { 'TODO', '|', 'DONE' }
 ---@field org_todo_repeat_to_state? string | nil An `org_todo_keywords` todo entry to use as a "starting" state for repeatable todos. Defaults to first todo state
 ---@field org_todo_keyword_faces? table<string, string> Custom faces (colors) for todo keywords. Default: {}

@@ -153,6 +153,7 @@ function Org.setup(opts)
   opts = opts or {}
   local config = require('orgmode.config'):extend(opts)
   config:install_grammar()
+  require('orgmode.diary.highlight').setup()
   instance = Org:new()
   instance.setup_called = true
   vim.defer_fn(function()
