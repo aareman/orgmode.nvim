@@ -487,6 +487,39 @@ local function eval(ast, date, raw_expr)
     return false
   end
 
+  if op == 'org-hebrew-anniversary' or op == 'diary-hebrew-anniversary' or op == 'hebrew-birthday' then
+    -- (org-hebrew-anniversary year month day) / (diary-hebrew-anniversary month day year)
+    -- Month may be a number or a name (e.g. Elul, Teves, Adar II).
+    -- Matches the Gregorian date whose Hebrew date is the anniversary.
+    -- Adar in a leap year is observed as Adar II; a day that doesn't
+    -- exist in the observation year (e.g. Kislev 30) is observed on the
+    -- 1st of the following month.
+    local Hebrew = require('orgmode.diary.hebrew')
+    local a1, a2, a3 = eval_arg(args[1]), eval_arg(args[2]), eval_arg(args[3])
+    local hyear, hmonth, hday
+    if op == 'org-hebrew-anniversary' then
+      hyear, hmonth, hday = tonumber(a1), a2, tonumber(a3)
+    else
+      hmonth, hday, hyear = a1, tonumber(a2), tonumber(a3)
+    end
+    if type(hmonth) == 'string' then
+      local resolved = Hebrew.month_from_name(hmonth)
+      if not resolved then
+        warn_once(raw_expr, ('unknown Hebrew month name: %s'):format(hmonth))
+        return false
+      end
+      hmonth = resolved
+    end
+    hmonth = tonumber(hmonth)
+    if not hyear or not hmonth or not hday then
+      warn_once(raw_expr, 'hebrew anniversary expects (year month day) with a valid Hebrew month')
+      return false
+    end
+    local hebrew_date = Hebrew.from_gregorian(date.year, date.month, date.day)
+    local month, day = Hebrew.resolve_anniversary(hebrew_date.year, hmonth, hday)
+    return hebrew_date.month == month and hebrew_date.day == day
+  end
+
   if op == 'lua' then
     -- (lua "expr"): evaluated with year, month, day, dow, isoweekday and
     -- the OrgDate `date` in scope. Wrapped in a parameterized function so

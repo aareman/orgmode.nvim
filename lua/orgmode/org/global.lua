@@ -50,7 +50,22 @@ end
 local build = function(orgmode)
   local config = require('orgmode.config')
 
+  local Hebrew = require('orgmode.diary.hebrew')
+
   local OrgGlobal = {
+    hebrew_date = function()
+      local today = require('orgmode.objects.date').today()
+      local hebrew = Hebrew.from_gregorian(today.year, today.month, today.day)
+      local message = ('Hebrew date: %d %s %d'):format(
+        hebrew.day,
+        Hebrew.month_name(hebrew.year, hebrew.month),
+        hebrew.year
+      )
+      vim.fn.setreg('+', message)
+      vim.notify(message)
+      return message
+    end,
+
     help = function()
       vim.cmd(('tabnew %s'):format(('%s/%s'):format(docs_dir, 'index.org')))
       vim.cmd(('tcd %s'):format(docs_dir))

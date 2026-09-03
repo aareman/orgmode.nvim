@@ -2480,6 +2480,21 @@ In text, =%d= interpolates the number of years since the anniversary year
 and =%s= its ordinal suffix (=st=, =nd=, =rd=, =th=); =%%= escapes a
 literal =%=.
 
+**Hebrew dates:** =%%(org-hebrew-anniversary year month day)= and
+=%%(diary-hebrew-anniversary month day year)= (alias =hebrew-birthday=)
+recur on the *Hebrew* calendar. The month may be given as a number
+(1 = Nisan ... 12 = Adar I, 13 = Adar II) or a name (=Elul=, =Teves=,
+=Adar II=, ...). Adar birthdays are observed on Adar II in leap years,
+and a nonexistent day (e.g. Kislev 30 in a short year) is observed on
+the 1st of the following month. Examples:
+
+#+begin_src org
+%%(org-hebrew-anniversary 5753 6 17) Avi's %d%s birthday
+%%(hebrew-birthday Elul 17 5753) Avi's %d%s birthday
+#+end_src
+
+The command =:Org hebrew_date= shows (and copies) today's Hebrew date.
+
 **Highlighting:** diary sexp expressions are highlighted in org buffers
 (purple italic for the expression, bold for the time). This is controlled
 by =org_highlight_diary_sexp= (default: =t=).
