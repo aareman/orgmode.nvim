@@ -833,6 +833,10 @@ memoize('get_diary_sexps')
 function Headline:get_diary_sexps()
   local parse = require('orgmode.diary.parse')
   local results = {}
+  -- Skip all node/text work for files that have no sexps at all
+  if not self.file:has_diary_entries() then
+    return results
+  end
 
   local function extract_from_node(node)
     if not node then

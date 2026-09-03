@@ -186,10 +186,10 @@ function OrgFile:is_modified()
 end
 
 ---Parse the file and update the root node
----@param skip_if_not_modified? boolean If true, skip parsing the file if it has not been modified
+---@param skip_if_not_modified? boolean Deprecated: the tree is always reused when the file has not been modified
 ---@return TSNode
 function OrgFile:parse(skip_if_not_modified)
-  if skip_if_not_modified and self.root and not self:is_modified() then
+  if self.root and not self:is_modified() then
     return self.root
   end
   self.parser = self:_get_parser()
@@ -849,6 +849,20 @@ function OrgFile:get_diary_sexps()
     end
   end
   return entries
+end
+
+---Cheap check whether the file contains any diary sexp marker at all.
+---Used to skip per-headline diary extraction entirely for files without
+---any sexps (the common case), so agenda rendering doesn't slow down.
+memoize('has_diary_entries')
+---@return boolean
+function OrgFile:has_diary_entries()
+  for _, line in ipairs(self.lines) do
+    if line:find('%%(', 1, true) then
+      return true
+    end
+  end
+  return false
 end
 
 ---@param footnote_reference OrgFootnote
