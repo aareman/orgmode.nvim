@@ -826,6 +826,38 @@ function Headline:tags_to_string(sorted)
   return utils.tags_to_string(tags, sorted), node
 end
 
+---Find diary sexp entries in the headline title and body
+---(<%%(sexp) [HH:MM]> or [%%(sexp)])
+memoize('get_diary_sexps')
+---@return { expr: string, time: string|nil, text: string, active: boolean, line: integer, range: OrgRange }[]
+function Headline:get_diary_sexps()
+  local parse = require('orgmode.diary.parse')
+  local results = {}
+
+  local function extract_from_node(node)
+    if not node then
+      return
+    end
+    local text = self.file:get_node_text(node) or ''
+    if not text:find('%%(', 1, true) then
+      return
+    end
+    local start_row, start_col = node:start()
+    -- Node text is single-line for item/body fragments we care about, but
+    -- find_sexps counts newlines defensively for the correct base line.
+    local base_line = start_row + 1
+    vim.list_extend(results, parse.find_sexps(text, base_line, start_col, { wrapped_only = true }))
+  end
+
+  extract_from_node(self:_get_child_node('item'))
+  local section = self:node():parent()
+  if section then
+    extract_from_node(section:field('body')[1])
+  end
+
+  return results
+end
+
 ---@return boolean
 function Headline:has_child_headlines()
   return self:node():parent():field('subsection')[1] ~= nil

@@ -836,6 +836,21 @@ function OrgFile:get_links()
   return links
 end
 
+---Find file-level diary sexp entries (bare %%(sexp) text lines, outside any
+---timestamp wrapper). These correspond to Emacs diary entries.
+memoize('get_diary_sexps')
+---@return { expr: string, time: string|nil, text: string, active: boolean, line: integer, range: OrgRange }[]
+function OrgFile:get_diary_sexps()
+  local parse = require('orgmode.diary.parse')
+  local entries = {}
+  for i, line in ipairs(self.lines) do
+    if line:find('%%(', 1, true) then
+      vim.list_extend(entries, parse.find_sexps(line, i, 0, { file_level_only = true }))
+    end
+  end
+  return entries
+end
+
 ---@param footnote_reference OrgFootnote
 ---@return OrgFootnote | nil
 function OrgFile:find_footnote_definition(footnote_reference)

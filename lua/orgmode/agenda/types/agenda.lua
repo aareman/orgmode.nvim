@@ -10,6 +10,9 @@ local ClockReport = require('orgmode.clock.report')
 local utils = require('orgmode.utils')
 local SortingStrategy = require('orgmode.agenda.sorting_strategy')
 local Promise = require('orgmode.utils.promise')
+local DiarySexp = require('orgmode.diary.sexp')
+local DiaryFormat = require('orgmode.diary.format')
+local DiaryHeadline = require('orgmode.diary.headline')
 
 ---@alias OrgAgendaDay { day: OrgDate, agenda_items: OrgAgendaItem[], category_length: number, label_length: 0 }
 
@@ -534,9 +537,11 @@ function OrgAgendaType:_build_line(agenda_item, metadata)
       hl_group = priority_hl_group,
     }))
   end
+  -- Diary headlines have no treesitter node, so they can't be markup'd
+  local markup_headline = not headline.is_diary and headline or nil
   line:add_token(AgendaLineToken:new({
     content = headline:get_title(),
-    add_markup_to_headline = headline,
+    add_markup_to_headline = markup_headline,
   }))
   if not self.remove_tags and #headline:get_tags() > 0 then
     local tags_string = headline:tags_to_string()
@@ -564,12 +569,40 @@ function OrgAgendaType:_get_agenda_days()
   local agenda_days = {}
 
   local headline_dates = {}
+  local diary_entries = {}
   for _, orgfile in ipairs(self.files:all()) do
     for _, headline in ipairs(orgfile:get_opened_headlines()) do
       for _, headline_date in ipairs(headline:get_valid_dates_for_agenda()) do
         table.insert(headline_dates, {
           headline_date = headline_date,
           headline = headline,
+        })
+      end
+      -- Diary sexps inside headlines (<%%(sexp) [HH:MM]>)
+      for _, sexp in ipairs(headline:get_diary_sexps()) do
+        if sexp.active then
+          local matcher = DiarySexp.parse(sexp.expr)
+          if matcher then
+            table.insert(diary_entries, {
+              headline = headline,
+              matcher = matcher,
+              expr = sexp.expr,
+              time = sexp.time,
+            })
+          end
+        end
+      end
+    end
+    -- File-level diary sexps (bare %%(sexp) text lines, Emacs diary style)
+    for _, sexp in ipairs(orgfile:get_diary_sexps()) do
+      local matcher = DiarySexp.parse(sexp.expr)
+      if matcher then
+        table.insert(diary_entries, {
+          headline = DiaryHeadline:new({ file = orgfile }),
+          matcher = matcher,
+          expr = sexp.expr,
+          time = sexp.time,
+          text = sexp.text,
         })
       end
     end
@@ -587,6 +620,39 @@ function OrgAgendaType:_get_agenda_days()
         table.insert(date.agenda_items, agenda_item)
         date.category_length = math.max(date.category_length, vim.api.nvim_strwidth(headline:get_category()))
         date.label_length = math.max(date.label_length, vim.api.nvim_strwidth(agenda_item.label))
+      end
+    end
+
+    for _, entry in ipairs(diary_entries) do
+      if entry.matcher:matches(day) then
+        -- The date of a diary item is the matching day itself, optionally
+        -- carrying the time of day from the entry (e.g. <%%(sexp) 09:00>)
+        local hour, min = nil, nil
+        if entry.time then
+          hour, min = entry.time:match('^(%d%d):(%d%d)$')
+          hour, min = tonumber(hour), tonumber(min)
+        end
+        local headline_date = Date:new({
+          year = day.year,
+          month = day.month,
+          day = day.day,
+          hour = hour,
+          min = min,
+          active = true,
+          type = 'NONE',
+        })
+        local headline = entry.headline
+        if entry.text then
+          ---@diagnostic disable-next-line: inject-field
+          headline._title = DiaryFormat.interpolate(entry.text, entry.expr, day)
+        end
+        local agenda_item = AgendaItem:new(headline_date, headline, day, #headline_dates + 1)
+        if self:_matches_filters(headline) then
+          table.insert(headlines, headline)
+          table.insert(date.agenda_items, agenda_item)
+          date.category_length = math.max(date.category_length, vim.api.nvim_strwidth(headline:get_category()))
+          date.label_length = math.max(date.label_length, vim.api.nvim_strwidth(agenda_item.label))
+        end
       end
     end
 
