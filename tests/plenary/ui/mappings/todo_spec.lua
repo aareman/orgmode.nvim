@@ -106,6 +106,49 @@ describe('Todo mappings', function()
     config.org_log_repeat = 'time'
   end)
 
+  it('prompts for a repeat note when LOG_REPEAT property is set, even if org_log_repeat does not prompt', function()
+    config.org_log_repeat = 'time'
+    helpers.create_agenda_file({
+      '* TODO Test orgmode',
+      '  DEADLINE: <2021-09-07 Tue 12:00 +1w>',
+      '  :PROPERTIES:',
+      '  :LOG_REPEAT: t',
+      '  :END:',
+    })
+    local called = false
+    local OrgMappings = require('orgmode.org.mappings')
+    local orig = OrgMappings._get_note
+    OrgMappings._get_note = function(_, template)
+      called = true
+      return require('orgmode.utils.promise').resolve({ template })
+    end
+    vim.fn.cursor(1, 1)
+    vim.cmd([[norm cit]])
+    vim.wait(200)
+    OrgMappings._get_note = orig
+    assert.is_true(called)
+  end)
+
+  it('does not prompt for a repeat note by default when org_log_repeat is time', function()
+    config.org_log_repeat = 'time'
+    helpers.create_agenda_file({
+      '* TODO Test orgmode',
+      '  DEADLINE: <2021-09-07 Tue 12:00 +1w>',
+    })
+    local called = false
+    local OrgMappings = require('orgmode.org.mappings')
+    local orig = OrgMappings._get_note
+    OrgMappings._get_note = function(_, template)
+      called = true
+      return require('orgmode.utils.promise').resolve({ template })
+    end
+    vim.fn.cursor(1, 1)
+    vim.cmd([[norm cit]])
+    vim.wait(200)
+    OrgMappings._get_note = orig
+    assert.is_false(called)
+  end)
+
   it('should add last repeat property and state change to drawer (org_log_into_drawer)', function()
     config:extend({
       org_log_into_drawer = 'LOGBOOK',

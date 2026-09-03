@@ -511,8 +511,14 @@ function OrgMappings:_todo_change_state(direction)
 
   item:set_todo(reset_keyword.value)
 
+  -- Note prompt on repeat: global default from org_log_repeat == 'note',
+  -- overridable per headline via a LOG_REPEAT property (any value enables
+  -- the prompt, even when the global default doesn't prompt).
+  local headline_repeat_note = item:get_property('LOG_REPEAT', false)
   local prompt_repeat_note = config.org_log_repeat == 'note'
+    or (headline_repeat_note ~= nil and headline_repeat_note ~= '')
   local log_repeat_enabled = config.org_log_repeat ~= false
+    or (headline_repeat_note ~= nil and headline_repeat_note ~= '')
   local repeat_note_template = ('%s- State %-12s from %-12s [%s]'):format(
     indent,
     [["]] .. new_todo .. [["]],
