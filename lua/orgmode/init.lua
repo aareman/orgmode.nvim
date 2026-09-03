@@ -226,6 +226,15 @@ function Org.cron(opts)
       return vim.cmd([[qa!]])
     end
     Org.files:load_sync(true, 20000)
+
+    -- Export before notifications:cron(), which quits nvim when done
+    if config.org_icalendar_file and config.org_icalendar_file ~= '' then
+      require('orgmode.icalendar').export({
+        path = config.org_icalendar_file,
+        days = config.org_icalendar_days,
+      })
+    end
+
     instance.notifications = require('orgmode.notifications')
       :new({
         files = Org.files,
