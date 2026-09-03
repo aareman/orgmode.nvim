@@ -2429,7 +2429,66 @@ Show the currently clocked in headline (if any), with total clocked time / effor
 set statusline=%{v:lua.orgmode.statusline()}
 #+end_src
 
-*** Formatting
+*** Diary sexp entries
+:PROPERTIES:
+:CUSTOM_ID: diary-sexp
+:END:
+Entries whose date is computed by an expression (Emacs
+[[https://orgmode.org/manual/Sexp-Entries.html][sexp entries]]) are shown
+in the day/week/month agenda. Two entry forms are supported:
+
+- Headline entries: a timestamp wrapping the expression inside a headline:
+
+#+begin_src org
+* Birthdays
+  <%%(diary-anniversary 10 31 1948)> Someone's %d%s birthday
+* Meetings
+  <%%(or (= dow 1) (= dow 3)) 09:00> Mon & Wed standup
+#+end_src
+
+- File-level entries (Emacs diary style): a bare line anywhere in the file.
+  Text after the expression is displayed as the agenda item:
+
+#+begin_src org
+%%(org-anniversary 1948 10 31) Arthur's %d%s birthday
+#+end_src
+
+Supported operators:
+
+- Logic: =(and ...)=, =(or ...)=, =(not ...)=
+- Comparisons: =(= a b)=, =(< a b)=, =(> a b)=, =(<= a b)=, =(>= a b)=
+- Arithmetic: =(+ ...)~=, =(- ...)~=, =(* ...)~=, =(/ ...)~=, =(mod a b)=,
+  =(min ...)~=, =(max ...)~=
+- =(diary-date month day [year])= — args may be =t= (any). Matches
+  month/day (and year when given)
+- =(diary-anniversary month day year)= or =(diary-anniversary year month day)=
+  — matches the anniversary. Feb 29 anniversaries match Mar 1 in non-leap years
+- =(org-anniversary year month day)= — same, with unambiguous argument order
+- =(diary-float month dayname nth)= — the =nth= =dayname= of =month=
+  (=month= and =dayname= may be =t=; =dayname= uses the Emacs convention,
+  0 = Sunday; negative =nth= counts from the end of the month)
+- =(diary-cyclic n month day)= — every =n= days starting from month/day
+- =(diary-remind '(expr) days)= — fires during the =days= days before
+  =expr= matches, and on the day itself
+- =(lua "expr")= — arbitrary Lua, with =year=, =month=, =day=, =dow=
+  (0 = Sunday), =isoweekday= (1 = Monday) and the =date= object
+  (an |OrgDate|) in scope. Example:
+  =(lua "year >= 2025 and dow == 5")=
+- Day names are accepted as shorthand: =%%(fri)= matches every Friday
+
+In text, =%d= interpolates the number of years since the anniversary year
+and =%s= its ordinal suffix (=st=, =nd=, =rd=, =th=); =%%= escapes a
+literal =%=.
+
+Headline entries may carry a time of day (=HH:MM=) inside the timestamp,
+which is shown in the agenda and included in the time grid:
+
+#+begin_src org
+* Meetings
+  <%%(diary-float t 3 2) 14:30> Biweekly sync (2nd Wednesday)
+#+end_src
+
+** Formatting
 :PROPERTIES:
 :CUSTOM_ID: formatting
 :END:

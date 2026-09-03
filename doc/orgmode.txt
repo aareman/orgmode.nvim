@@ -11,6 +11,7 @@ Table of Contents                                  *orgmode-table-of-contents*
   - Mappings                                  |orgmode-configuration-mappings|
   - Lsp                                            |orgmode-configuration-lsp|
   - Features                                  |orgmode-configuration-features|
+  - Formatting                              |orgmode-configuration-formatting|
   - User interface                      |orgmode-configuration-user-interface|
 2. Troubleshooting                                   |orgmode-troubleshooting|
   - Indentation is not working |orgmode-troubleshooting-indentation-is-not-working|
@@ -119,8 +120,6 @@ Available `string` values:
 - `vertical` - Always split vertically
 - `auto` - Determine between horizontal and vertical split depending on the current window size
 - `float` - Open in float window that has width of 70% of the screen centered
-- `edit` - Open in the current window
-- `tabnew` - Open in a new tab
 - `{'float', 0.9}` - Open in float window and provide custom scale (in this case it's 90% of screen size), must be value between `0` and `1`
 
 If none of the options above suit your needs, there are 2 other ways to
@@ -2463,7 +2462,64 @@ effort estimate (if set).
 <
 
 
-Formatting                                                *orgmode-Formatting*
+Diary sexp entries                                *orgmode-Diary-sexp-entries*
+
+Entries whose date is computed by an expression (Emacs sexp entries
+<https://orgmode.org/manual/Sexp-Entries.html>) are shown in the day/week/month
+agenda. Two entry forms are supported:
+
+- Headline entries: a timestamp wrapping the expression inside a headline:
+
+>org
+    * Birthdays
+      <%%(diary-anniversary 10 31 1948)> Someone's %d%s birthday
+    * Meetings
+      <%%(or (= dow 1) (= dow 3)) 09:00> Mon & Wed standup
+<
+
+- File-level entries (Emacs diary style): a bare line anywhere in the file.
+    Text after the expression is displayed as the agenda item:
+
+>org
+    %%(org-anniversary 1948 10 31) Arthur's %d%s birthday
+<
+
+Supported operators:
+
+- Logic: `(and ...)`, `(or ...)`, `(not ...)`
+- Comparisons: `(` a b)=, `(< a b)`, `(> a b)`, `(<` a b)=, `(>` a b)=
+- Arithmetic: `(+ ...)~`, `(- ...)~`, `(* ...)~`, `(/ ...)~`, `(mod a b)`,
+    `(min ...)~`, `(max ...)~`
+- `(diary-date month day [year])` — args may be `t` (any). Matches
+    month/day (and year when given)
+- `(diary-anniversary month day year)` or `(diary-anniversary year month day)`
+    — matches the anniversary. Feb 29 anniversaries match Mar 1 in non-leap years
+- `(org-anniversary year month day)` — same, with unambiguous argument order
+- `(diary-float month dayname nth)` — the `nth` `dayname` of `month`
+    (`month` and `dayname` may be `t`; `dayname` uses the Emacs convention,
+    0 = Sunday; negative `nth` counts from the end of the month)
+- `(diary-cyclic n month day)` — every `n` days starting from month/day
+- `(diary-remind '(expr) days)` — fires during the `days` days before
+    `expr` matches, and on the day itself
+- `(lua "expr")` — arbitrary Lua, with `year`, `month`, `day`, `dow`
+    (0 = Sunday), `isoweekday` (1 = Monday) and the `date` object
+    (an |OrgDate|) in scope. Example:
+    `(lua "year >` 2025 and dow == 5")=
+- Day names are accepted as shorthand: `%%(fri)` matches every Friday
+
+In text, `%d` interpolates the number of years since the anniversary year and
+`%s` its ordinal suffix (`st`, `nd`, `rd`, `th`); `%%` escapes a literal `%`.
+
+Headline entries may carry a time of day (`HH:MM`) inside the timestamp, which
+is shown in the agenda and included in the time grid:
+
+>org
+    * Meetings
+      <%%(diary-float t 3 2) 14:30> Biweekly sync (2nd Wednesday)
+<
+
+
+FORMATTING                                  *orgmode-configuration-formatting*
 
 Formatting is done via `gq` mapping, which uses `formatexpr` under the hood
 (see `:help formatexpr` for more info). For example, to re-format whole
