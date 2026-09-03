@@ -123,9 +123,89 @@ function Notifications:get_tasks(time)
         end
       end
     end
+
+    -- Diary sexp entries: evaluated per day, notified like other timed
+    -- entries when they match today and carry a time of day.
+    if config.notifications.diary_reminder then
+      self:_add_diary_tasks(orgfile, time, tasks)
+    end
   end
 
   return tasks
+end
+
+---Add notification tasks for diary sexp entries matching today.
+---Only entries with a time of day can notify (there is no meaningful
+---reminder time for all-day diary entries).
+---@private
+---@param orgfile OrgFile
+---@param time OrgDate Current time
+---@param tasks table[] Task list to append to
+function Notifications:_add_diary_tasks(orgfile, time, tasks)
+  local DiarySexp = require('orgmode.diary.sexp')
+  local DiaryFormat = require('orgmode.diary.format')
+  local notification_config = config.notifications or {}
+  local times = notification_config.reminder_time and utils.ensure_array(notification_config.reminder_time) or {}
+
+  local function add_task(headline, expr, diary_time, text)
+    if not diary_time then
+      return
+    end
+    local h, m = diary_time:match('^(%d%d):(%d%d)$')
+    if not h or not m then
+      return
+    end
+    local event = Date:new({
+      year = time.year,
+      month = time.month,
+      day = time.day,
+      hour = tonumber(h),
+      min = tonumber(m),
+      active = true,
+      type = 'NONE',
+    })
+    local minutes = event:diff(time, 'minute')
+    if not vim.tbl_contains(times, minutes) then
+      return
+    end
+    local title = text and DiaryFormat.interpolate(text, expr, time) or headline:get_title()
+    table.insert(tasks, {
+      file = orgfile.filename,
+      todo = headline:get_todo(),
+      category = headline:get_category(),
+      priority = headline:get_priority(),
+      title = title,
+      level = headline.is_diary and 1 or headline:get_level(),
+      tags = headline:get_tags(),
+      original_time = event,
+      time = event,
+      reminder_type = 'time',
+      minutes = minutes,
+      humanized_duration = utils.humanize_minutes(minutes),
+      type = 'DIARY',
+      range = nil,
+    })
+  end
+
+  for _, headline in ipairs(orgfile:get_opened_unfinished_headlines()) do
+    for _, sexp in ipairs(headline:get_diary_sexps()) do
+      if sexp.active and sexp.time then
+        local matcher = DiarySexp.parse(sexp.expr)
+        if matcher and matcher:matches(time) then
+          add_task(headline, sexp.expr, sexp.time, nil)
+        end
+      end
+    end
+  end
+
+  for _, sexp in ipairs(orgfile:get_diary_sexps()) do
+    if sexp.time then
+      local matcher = DiarySexp.parse(sexp.expr)
+      if matcher and matcher:matches(time) then
+        add_task(require('orgmode.diary.headline'):new({ file = orgfile }), sexp.expr, sexp.time, sexp.text)
+      end
+    end
+  end
 end
 
 ---@param date OrgDate - date to check

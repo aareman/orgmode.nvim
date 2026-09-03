@@ -48,6 +48,7 @@
 ---@field repeater_reminder_time? boolean | number | number[] Number of minutes before the repeater time to send the notifiaction. Default: false
 ---@field deadline_warning_reminder_time? boolean | number | number[] Number of minutes before the deadline wrning time to send the notifiaction. Default: 0
 ---@field reminder_time? boolean | number | number[] Number of minutes before the time to send the notifiaction. Default: 10
+---@field diary_reminder? boolean Notify about diary sexp entries that match today (with a time of day). Default: true
 ---@field deadline_reminder? boolean Enable notifiactions for DEADLINE dates. Default: true
 ---@field scheduled_reminder? boolean Enable notifiactions for DEADLINE dates. Default: true
 
@@ -198,6 +199,8 @@
 ---@class OrgConfigOpts
 ---@field org_agenda_files? string | string[] Path(s) to org files. Can be a glob pattern (example: `~/org/**/*`). Default: {}
 ---@field org_default_notes_file? string Path to default file for captures. Default: ''
+---@field org_icalendar_file? string Path to write an iCalendar export of the agenda to (cron only unless called manually). Default: nil (disabled)
+---@field org_icalendar_days? number How many days ahead to expand agenda entries and diary sexps in the iCalendar export. Default: 60
 ---@field org_todo_keywords? string[] List of todo/done states, separated by `|`. Default: { 'TODO', '|', 'DONE' }
 ---@field org_todo_repeat_to_state? string | nil An `org_todo_keywords` todo entry to use as a "starting" state for repeatable todos. Defaults to first todo state
 ---@field org_todo_keyword_faces? table<string, string> Custom faces (colors) for todo keywords. Default: {}

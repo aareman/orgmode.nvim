@@ -92,7 +92,10 @@ local DefaultConfig = {
     reminder_time = 10,
     deadline_reminder = true,
     scheduled_reminder = true,
+    diary_reminder = true,
   },
+  org_icalendar_file = nil,
+  org_icalendar_days = 60,
   hyperlinks = {
     sources = {},
   },
